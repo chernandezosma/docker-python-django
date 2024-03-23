@@ -12,28 +12,26 @@ USER pyuser
 WORKDIR /var/www/hello
 RUN pip install --upgrade pip
 
-RUN export PYTHONPATH=/var/www/hello
+RUN export PYTHONPATH=/var/www/hello/src
 RUN export PYTHONDONTWRITEBYTECODE=1
 ENV export PYTHONUNBUFFERED=1
 
 COPY requirements.txt /var/www/hello
 COPY manage.py .
-RUN mkdir -p ./hello/static
+RUN mkdir -p ./static
+RUN mkdir -p ./media
 RUN mkdir -p ./logs
 
 RUN pip install --no-cache-dir --force-reinstall -r requirements.txt
 
-COPY ./src /var/www/hello
+COPY ./src/hello /var/www/hello/hello
 
 USER root
-
 RUN chmod -R 775 hello
 RUN chmod -R 775 logs 
-
-RUN chown pyuser:pygroup manage.py
-RUN chown pyuser:pygroup requirements.txt
-RUN chown pyuser:pygroup /var/www/hello/hello 
-RUN chown pyuser:pygroup /var/www/hello/logs 
+RUN chown -R pyuser:pygroup manage.py
+RUN chown -R pyuser:pygroup requirements.txt
+RUN chown -R pyuser:pygroup hello/
 
 USER pyuser
 

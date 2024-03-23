@@ -1,5 +1,3 @@
-ARG MYSQL_VERSION
-
-FROM ${MYSQL_VERSION}
+FROM mysql:8.0
 
 ADD ./scripts/create.real.sql /docker-entrypoint-initdb.d
