@@ -1,0 +1,5 @@
+ARG MYSQL_VERSION
+
+FROM ${MYSQL_VERSION}
+
+ADD ./scripts/create.real.sql /docker-entrypoint-initdb.d
