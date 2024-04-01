@@ -1,3 +1,0 @@
-FROM mysql:8.0
-
-ADD ./docker/db/scripts/create.test.sql /docker-entrypoint-initdb.d

@@ -7,7 +7,7 @@ services:
         container_name: pyHttpd
         ports:
             - ${HTTPD_PORT}:80
-            - ${HTPPD_REMOTE_DEBUG_PORT}:3500
+            - ${HTTPD_REMOTE_DEBUG_PORT}:3500
             - ${HTTPD_DEV_SERVER_PORT}:81
         volumes:
             - ./docker/httpd/config/conf.d:/etc/nginx/conf.d/default.conf
@@ -20,22 +20,27 @@ services:
 
     gunicorn:
         restart: on-failure
-        container_name: pyApp
+        container_name: ${PYTHON_CONTAINER}
         build:
             dockerfile: ./docker/django/Dockerfile
             context: .
             args:
+                PYTHONVERSION: "${PYTHON_VERSION}"
+                PIP_REQUIREMENTS: "${PIP_REQUIREMENTS}"
+                PYTHONDONTWRITEBYTECODE: "${PYTHON_DONT_WRITE_BYTE_CODE}"
+                PYTHONUNBUFFERED: "${PYTHON_UNBUFFERED}"
+                PYTHONPATH: "${PYTHON_PATH}"
                 PIP_REQUIREMENTS: "${PIP_REQUIREMENTS}"
         command: bash -c "/home/pyuser/.local/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 hello.wsgi:application"
         depends_on:
             - db
         volumes:
-            - ./src/hello:/var/www/app/hello
+            - ${CODE_DIRECTORY}:/var/www/app/hello
             - media_assets:/var/www/app/media
             - static_assets:/var/www/app/static
         expose:
-            - "8000"
-            - "3500"
+            - ${HTTPD_PORT}:80
+            - ${HTTPD_REMOTE_DEBUG_PORT}:3500
         environment:
             DJANGO_SETTINGS_MODULE: "${DJANGO_SETTINGS_MODULE}"
             DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
@@ -50,16 +55,16 @@ services:
             - ${NETWORK}
 
     python_db:
-        image: mysql:8.0
-        container_name: pyDb
+        image: ${MYSQL_VERSION}
+        container_name: ${MYSQL_CONTAINER}
         restart: on-failure
         env_file:
             - ".env"
         build:
-            dockerfile: ./docker/db/Dockerfile.db.real
+            dockerfile: ./docker/db/Dockerfile.real
             context: .
             args:
-                MYSQL_VERSION: mysql:8.0
+                MYSQL_VERSION: ${MYSQL_VERSION}
             # https://github.com/docker-library/mysql/issues/422
             # https://stackoverflow.com/questions/55559386/how-to-fix-mbind-operation-not-permitted-in-mysql-error-log            
         security_opt:
@@ -73,8 +78,8 @@ services:
             MYSQL_PASSWORD: ${MYSQL_PASSWORD}
             MYSQL_LOG_CONSOLE: ${MYSQL_LOG_ENABLED}
         volumes:
-            - ./docker/db/scripts/create.real.sql:/docker-entrypoint-initdb.d/create.sql
-            - ./docker/db/config/my.cnf:/etc/mysql/conf.d/my.cnf
+            - ${MYSQL_INIT_DB_DIRECTORY}:/docker-entrypoint-initdb.d/create.sql
+            - ${MYSQL_CONFIG_DB_DIRECTORY}:/etc/mysql/conf.d/my.cnf
         networks:
             - ${NETWORK}
 

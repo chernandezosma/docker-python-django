@@ -1,26 +1,19 @@
-FROM python:3.10.14-alpine
+ARG PYTHONVERSION
 
-RUN apk update && \
-    apk --no-interactive --update --no-cache  \
-      add  \
-          vim  \
-          curl  \
-          apache2  \
-          apache2-utils  \
-          apache2-mod-wsgi  \
-          py3-pip  \
-          py3-virtualenv \
-          bash
+FROM ${PYTHONVERSION}
+
+RUN apk update && apk --no-interactive --update --no-cache \
+      add vim curl apache2 apache2-utils apache2-mod-wsgi py3-pip py3-virtualenv bash
 
 RUN ln -sf python3 /usr/bin/python
-
 RUN pip install --upgrade pip setuptools
 RUN pip install django pydevd-pycharm
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH=/var/www/hello
-ARG PIP_REQUIREMENTS=dev.txt
+ARG PYTHONPATH=${PYTHONPATH}
+ARG PIP_REQUIREMENTS=${PIP_REQUIREMENTS}
+
+ENV PYTHONDONTWRITEBYTECODE ${PYTHONDONTWRITEBYTECODE}
+ENV PYTHONUNBUFFERED ${PYTHONUNBUFFERED}
 
 # create user for the Django project
 RUN addgroup -S pygroup -g 1000
@@ -28,31 +21,22 @@ RUN adduser -S pyuser -u 1000 -G pygroup
 
 USER pyuser
 
-RUN export PYTHONPATH=/var/www/hello/src
-RUN export PYTHONDONTWRITEBYTECODE=1
-ENV export PYTHONUNBUFFERED=1
+RUN export PYTHONPATH=${PYTHONPATH}
+RUN export PYTHONDONTWRITEBYTECODE=${PYTHONDONTWRITEBYTECODE}
+ENV export PYTHONUNBUFFERED=${PYTHONUNBUFFERED}
 
-WORKDIR /var/www/app
+WORKDIR ${PYTHONPATH}
 RUN pip install --upgrade pip
 
-# create and activate virtual environment
-#RUN python3 -m venv env
-#RUN source env/bin/activate
-
-COPY --chown=pyuser ./src/requirements/. /var/www/app/requirements/.
-COPY --chown=pyuser ./src/manage.py /var/www/app/.
+COPY --chown=pyuser ./src/requirements/. ${PYTHONPATH}/requirements/.
+COPY --chown=pyuser ./src/manage.py ${PYTHONPATH}/.
 
 RUN mkdir -p ./static
 RUN mkdir -p ./media
 RUN mkdir -p ./logs
 
-# copy and install pip requirements
-RUN pip install --no-cache-dir --force-reinstall -r /var/www/app/requirements/dev.txt
-
-#RUN ls -la env/bin
-#RUN pip list
-
-# copy Django project files
+# install pip requirements and copy sources
+RUN pip install --no-cache-dir --force-reinstall -r ${PYTHONPATH}/requirements/dev.txt
 COPY --chown=pyuser ./src/hello hello
 
 USER root
@@ -63,7 +47,5 @@ RUN chown -R pyuser:pygroup requirements
 RUN chown -R pyuser:pygroup hello/
 
 USER pyuser
-
-ENV export DJANGO_SETTINGS_MODULE=hello.settings.dev
 
 RUN python manage.py collectstatic --no-input
